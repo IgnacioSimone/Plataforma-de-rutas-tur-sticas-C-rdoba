@@ -8,25 +8,27 @@ import { Provider as PaperProvider } from "react-native-paper";
 import PantallaRegistro from "./Pantallas/PantallaRegistro";
 import PantallaIniciarSesion from "./Pantallas/PantallaIniciarSesion";
 import PantallaRecuperarContrasena from "./Pantallas/PantallaRecuperarContrasena";
-import PantallaRegistroExitoso from "./Pantallas/PantallaRegistroExitoso";
 import PantallaCheckMail from "./Pantallas/PantallaCheckMail";
 import PantallaCambiarContrasena from "./Pantallas/PantallaCambiarContrasena";
+import PantallaRegistroExitoso from "./Pantallas/PantallaRegistroExitoso";
 import PantallaExploracion from "./Pantallas/PantallaExploracion";
 
 const Stack = createNativeStackNavigator();
 
-// Deep-linking: prefijos + mapeo de rutas a pantallas
 const linking = {
-  prefixes: [Linking.createURL("/"), "rtc://"],
+  prefixes: [
+    Linking.createURL("/"),  // expo://… en desarrollo
+    "rtc://",                // tu scheme en producción
+  ],
   config: {
     screens: {
-      PantallaIniciarSesion:       "login",            // rtc://login
-      PantallaRegistro:            "signup",           // rtc://signup
-      PantallaRegistroExitoso:     "signup-success",   // rtc://signup-success
-      PantallaRecuperarContrasena: "forgot-password",  // rtc://forgot-password
-      PantallaCheckMail:           "check-mail",       // rtc://check-mail
-      PantallaCambiarContrasena:   "reset-password",   // rtc://reset-password?access_token=...
-      PantallaExploracion:         "home",             // rtc://home
+      PantallaIniciarSesion:       "login",
+      PantallaRegistro:            "signup",
+      PantallaRegistroExitoso:     "signup-success",
+      PantallaRecuperarContrasena: "forgot-password",
+      PantallaCheckMail:           "check-mail",
+      PantallaCambiarContrasena:   "reset-password", // rtc://reset-password?access_token=…
+      PantallaExploracion:         "home",
     },
   },
 };
@@ -35,40 +37,21 @@ export default function App() {
   return (
     <PaperProvider>
       <NavigationContainer linking={linking} fallback={<Text>Cargando…</Text>}>
-        <Stack.Navigator
-          initialRouteName="PantallaIniciarSesion"
-          screenOptions={{ headerShown: false }}
-        >
-          {/* Modales / pantallas secundarias */}
-          <Stack.Screen
-            name="PantallaRecuperarContrasena"
-            component={PantallaRecuperarContrasena}
-          />
-          <Stack.Screen
-            name="PantallaRegistroExitoso"
-            component={PantallaRegistroExitoso}
-          />
-          <Stack.Screen
-            name="PantallaCheckMail"
-            component={PantallaCheckMail}
-          />
-          <Stack.Screen
-            name="PantallaCambiarContrasena"
-            component={PantallaCambiarContrasena}
-          />
+        <Stack.Navigator initialRouteName="PantallaIniciarSesion" screenOptions={{ headerShown: false }}>
+          {/* Flujo contraseña */}
+          <Stack.Screen name="PantallaRecuperarContrasena" component={PantallaRecuperarContrasena} />
+          <Stack.Screen name="PantallaCheckMail" component={PantallaCheckMail} />
+          <Stack.Screen name="PantallaCambiarContrasena" component={PantallaCambiarContrasena} />
 
-          {/* Flujo de autenticación */}
+          {/* Flujo registro */}
           <Stack.Screen name="PantallaRegistro" component={PantallaRegistro} />
-          <Stack.Screen
-            name="PantallaIniciarSesion"
-            component={PantallaIniciarSesion}
-          />
+          <Stack.Screen name="PantallaRegistroExitoso" component={PantallaRegistroExitoso} />
 
-          {/* Pantalla principal */}
-          <Stack.Screen
-            name="PantallaExploracion"
-            component={PantallaExploracion}
-          />
+          {/* Login */}
+          <Stack.Screen name="PantallaIniciarSesion" component={PantallaIniciarSesion} />
+
+          {/* Principal */}
+          <Stack.Screen name="PantallaExploracion" component={PantallaExploracion} />
         </Stack.Navigator>
       </NavigationContainer>
     </PaperProvider>

@@ -4,59 +4,41 @@ import {
   View,
   StyleSheet,
   Dimensions,
-  ActivityIndicator,
 } from "react-native";
-import { Text, TextInput, Button, HelperText } from "react-native-paper";
-import * as Linking from "expo-linking";
+import {
+  Text,
+  TextInput,
+  Button,
+  HelperText,
+  Card,
+} from "react-native-paper";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { LinearGradient } from "expo-linear-gradient";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { supabase } from "../supabaseClient";
 
 const { width } = Dimensions.get("window");
 
-export default function PantallaCambiarContrasena() {
+export default function PantallaCambiarContrasena({ navigation }: any) {
   const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [error, setError] = useState("");
-  const [info, setInfo] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [checking, setChecking] = useState(true);
+  const [confirm, setConfirm]   = useState("");
+  const [error, setError]       = useState("");
+  const [loading, setLoading]   = useState(false);
 
+  // Paso 2: Al montar, restauramos la sesión desde el query param
   useEffect(() => {
-    // 1) Al montarse, extraemos access_token y refresh_token de la URL
     (async () => {
-      try {
-        const url = await Linking.getInitialURL();
-        if (!url) throw new Error("URL vacía");
-        const parsed = Linking.parse(url);
-        const { access_token, refresh_token } = parsed.queryParams as Record<
-          string,
-          string
-        >;
-        if (!access_token || !refresh_token) {
-          throw new Error("Faltan tokens en la URL");
-        }
-
-        // 2) Le decimos a supabase que use esa sesión
-        const {
-          data: sessionData,
-          error: sessionError,
-        } = await supabase.auth.setSession({
-          access_token,
-          refresh_token,
-        });
-        if (sessionError) throw sessionError;
-        // sesión lista, permitimos mostrar el formulario
-      } catch (err: unknown) {
-        console.warn(err);
-        setError("Link inválido o expirado.");
-      } finally {
-        setChecking(false);
+      const { data, error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
+      if (error) {
+        console.warn("Link inválido o expirado:", error.message);
+        navigation.replace("PantallaIniciarSesion");
       }
+      // si no hay error, ya tienes sesión y mostramos el formulario
     })();
   }, []);
 
   const handleUpdate = async () => {
     setError("");
-    setInfo("");
     if (password.length < 8) {
       setError("La contraseña debe tener al menos 8 caracteres.");
       return;
@@ -65,104 +47,116 @@ export default function PantallaCambiarContrasena() {
       setError("Las contraseñas no coinciden.");
       return;
     }
+
     setLoading(true);
-    const { error: updateErr } = await supabase.auth.updateUser({
-      password,
-    });
+    const { error: updErr } = await supabase.auth.updateUser({ password });
     setLoading(false);
-    if (updateErr) {
-      setError("No pudimos cambiar tu contraseña.");
+
+    if (updErr) {
+      setError(updErr.message);
     } else {
-      setInfo("¡Contraseña actualizada! Redirigiendo al login...");
-      setTimeout(() => {
-        Linking.openURL("rtc://login");
-      }, 2000);
+      navigation.replace("PantallaIniciarSesion");
     }
   };
 
-  if (checking) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
-        <Text style={{ marginTop: 12 }}>Verificando enlace…</Text>
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Cambiar contraseña</Text>
-      <Text style={styles.subtitle}>
-        Ingresa tu nueva contraseña para finalizar.
-      </Text>
+    <KeyboardAwareScrollView
+      contentContainerStyle={styles.container}
+      enableOnAndroid
+    >
+      <View style={styles.topContainer}>
+        <LinearGradient
+          colors={["#4E8DF5", "#2C68F2"]}
+          style={styles.gradientIcon}
+        >
+          <MaterialCommunityIcons name="lock-reset-outline" size={32} color="#fff" />
+        </LinearGradient>
+        <Text style={styles.title}>Crear nueva contraseña</Text>
+        <Text style={styles.subtitle}>
+          Ingresa y confirma tu nueva contraseña
+        </Text>
+      </View>
 
-      <TextInput
-        placeholder="Nueva contraseña"
-        mode="outlined"
-        secureTextEntry
-        style={styles.input}
-        value={password}
-        onChangeText={setPassword}
-      />
-      <TextInput
-        placeholder="Confirmar contraseña"
-        mode="outlined"
-        secureTextEntry
-        style={styles.input}
-        value={confirm}
-        onChangeText={setConfirm}
-      />
+      <Card style={styles.card}>
+        <Card.Content>
+          <TextInput
+            placeholder="Nueva contraseña"
+            mode="outlined"
+            secureTextEntry
+            style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+          />
+          <TextInput
+            placeholder="Confirmar contraseña"
+            mode="outlined"
+            secureTextEntry
+            style={styles.input}
+            value={confirm}
+            onChangeText={setConfirm}
+          />
 
-      {error ? <HelperText type="error">{error}</HelperText> : null}
-      {info ? (
-        <HelperText type="info" style={{ color: "#4CAF50" }}>
-          {info}
-        </HelperText>
-      ) : null}
+          {error ? <HelperText type="error">{error}</HelperText> : null}
 
-      <Button
-        mode="contained"
-        onPress={handleUpdate}
-        loading={loading}
-        style={styles.button}
-      >
-        Actualizar contraseña
-      </Button>
-    </View>
+          <Button
+            mode="contained"
+            onPress={handleUpdate}
+            loading={loading}
+            style={styles.button}
+          >
+            Actualizar contraseña
+          </Button>
+        </Card.Content>
+      </Card>
+    </KeyboardAwareScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: "#F6F7FA",
-    padding: 16,
+    flexGrow: 1,
     justifyContent: "center",
+    padding: 16,
+    backgroundColor: "#F6F7FA",
   },
-  centered: {
-    flex: 1,
+  topContainer: {
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  gradientIcon: {
+    width: 62,
+    height: 62,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F6F7FA",
+    marginBottom: 12,
   },
   title: {
     fontSize: 24,
     fontWeight: "600",
-    textAlign: "center",
-    marginBottom: 4,
+    color: "#1C355E",
   },
   subtitle: {
     fontSize: 14,
     color: "#90949C",
     textAlign: "center",
-    marginBottom: 24,
+    marginTop: 4,
+  },
+  card: {
+    borderRadius: 16,
+    backgroundColor: "#fff",
+    paddingVertical: 16,
+    width: width - 32,
+    alignSelf: "center",
   },
   input: {
-    backgroundColor: "#FFF",
+    backgroundColor: "#F1F3F5",
     marginBottom: 12,
+    borderRadius: 12,
   },
   button: {
-    marginTop: 8,
-    borderRadius: 8,
+    marginTop: 12,
+    borderRadius: 12,
+    backgroundColor: "#2073F7",
   },
 });
