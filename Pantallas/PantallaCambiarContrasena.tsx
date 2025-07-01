@@ -15,6 +15,7 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import * as Linking from "expo-linking";
 import { supabase } from "../supabaseClient";
 
 const { width } = Dimensions.get("window");
@@ -25,15 +26,23 @@ export default function PantallaCambiarContrasena({ navigation }: any) {
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
 
-  // Paso 2: Al montar, restauramos la sesión desde el query param
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
+      // 1) Capturo la URL que abrió la app
+      const url = await Linking.getInitialURL();
+      console.log("Deep link recibido:", url);
+
+      // 2) La paso a Supabase para extraer el token y guardar la sesión
+      //    (casteo a any porque TS no reconoce el método en tu versión)
+      const { error } = await (supabase.auth as any).getSessionFromUrl({
+        storeSession: true,
+        url,
+      });
       if (error) {
         console.warn("Link inválido o expirado:", error.message);
         navigation.replace("PantallaIniciarSesion");
       }
-      // si no hay error, ya tienes sesión y mostramos el formulario
+      // si no hay error, la sesión quedó almacenada y mostramos el formulario
     })();
   }, []);
 
@@ -69,7 +78,11 @@ export default function PantallaCambiarContrasena({ navigation }: any) {
           colors={["#4E8DF5", "#2C68F2"]}
           style={styles.gradientIcon}
         >
-          <MaterialCommunityIcons name="lock-reset-outline" size={32} color="#fff" />
+          <MaterialCommunityIcons
+            name="lock-reset"
+            size={32}
+            color="#fff"
+          />
         </LinearGradient>
         <Text style={styles.title}>Crear nueva contraseña</Text>
         <Text style={styles.subtitle}>
