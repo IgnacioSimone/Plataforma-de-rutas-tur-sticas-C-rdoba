@@ -20,7 +20,7 @@ import { supabase } from "../supabaseClient";
 
 const { width } = Dimensions.get("window");
 
-export default function PantallaCambiarContrasena({ navigation }: any) {
+export default function PantallaCambiarContrasena({ route, navigation }: any) {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm]   = useState("");
   const [error, setError]       = useState("");
@@ -28,12 +28,14 @@ export default function PantallaCambiarContrasena({ navigation }: any) {
 
   useEffect(() => {
     (async () => {
-      // 1) Capturo la URL que abrió la app
-      const url = await Linking.getInitialURL();
+      const url = route.params?.url;
       console.log("Deep link recibido:", url);
 
-      // 2) La paso a Supabase para extraer el token y guardar la sesión
-      //    (casteo a any porque TS no reconoce el método en tu versión)
+      if (!url) {
+        navigation.replace("PantallaIniciarSesion");
+        return;
+      }
+
       const { error } = await (supabase.auth as any).getSessionFromUrl({
         storeSession: true,
         url,
@@ -42,9 +44,8 @@ export default function PantallaCambiarContrasena({ navigation }: any) {
         console.warn("Link inválido o expirado:", error.message);
         navigation.replace("PantallaIniciarSesion");
       }
-      // si no hay error, la sesión quedó almacenada y mostramos el formulario
     })();
-  }, []);
+  }, [route.params?.url]);
 
   const handleUpdate = async () => {
     setError("");

@@ -8,6 +8,7 @@ import * as Linking from "expo-linking";
 import { supabase } from "../supabaseClient";
 
 const { width } = Dimensions.get("window");
+const RESET_PASSWORD_URL = Linking.createURL("reset-password");
 
 export default function PantallaRecuperarContrasena({ navigation }: any) {
   const [email, setEmail] = useState("");
@@ -37,9 +38,9 @@ export default function PantallaRecuperarContrasena({ navigation }: any) {
     }
 
     setLoading(true);
-    // Generamos el deep link dinámicamente
-    const redirectUrl = Linking.createURL("reset-password");
-    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl });
+    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: RESET_PASSWORD_URL,
+    });
     setLoading(false);
 
     if (resetErr) {

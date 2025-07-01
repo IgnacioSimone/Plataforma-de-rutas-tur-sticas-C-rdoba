@@ -1,7 +1,11 @@
 import * as React from "react";
 import { Text } from "react-native";
 import * as Linking from "expo-linking";
-import { NavigationContainer } from "@react-navigation/native";
+import {
+  NavigationContainer,
+  NavigationContainerRef,
+  ParamListBase,
+} from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Provider as PaperProvider } from "react-native-paper";
 
@@ -33,10 +37,28 @@ const linking = {
   },
 };
 
+const navigationRef = React.useRef<NavigationContainerRef<ParamListBase>>(null);
+
 export default function App() {
+  React.useEffect(() => {
+    const handleDeepLink = ({ url }: { url: string }) => {
+      const data = Linking.parse(url);
+      if (data.path === "reset-password") {
+        navigationRef.current?.navigate("PantallaCambiarContrasena", { url });
+      }
+    };
+
+    const sub = Linking.addEventListener("url", handleDeepLink);
+    return () => sub.remove();
+  }, []);
+
   return (
     <PaperProvider>
-      <NavigationContainer linking={linking} fallback={<Text>Cargando…</Text>}>
+      <NavigationContainer
+        ref={navigationRef}
+        linking={linking}
+        fallback={<Text>Cargando…</Text>}
+      >
         <Stack.Navigator initialRouteName="PantallaIniciarSesion" screenOptions={{ headerShown: false }}>
           {/* Flujo contraseña */}
           <Stack.Screen name="PantallaRecuperarContrasena" component={PantallaRecuperarContrasena} />
