@@ -1,3 +1,4 @@
+// Pantallas/PantallaRecuperarContrasena.tsx
 import React, { useState, useRef } from "react";
 import { View, StyleSheet, Animated, Dimensions } from "react-native";
 import { Text, TextInput, Button, HelperText, Card } from "react-native-paper";
@@ -8,19 +9,25 @@ import * as Linking from "expo-linking";
 import { supabase } from "../supabaseClient";
 
 const { width } = Dimensions.get("window");
+// Este esquema ha de coincidir con tu app.json
+const RESET_PASSWORD_URL = Linking.createURL("reset-password");
 
 export default function PantallaRecuperarContrasena({ navigation }: any) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const borderAnim = useRef(new Animated.Value(0)).current;
 
+  const borderAnim = useRef(new Animated.Value(0)).current;
   const animateError = () => {
     Animated.sequence([
       Animated.timing(borderAnim, { toValue: 1, duration: 200, useNativeDriver: false }),
       Animated.timing(borderAnim, { toValue: 0, duration: 200, useNativeDriver: false }),
     ]).start();
   };
+  const borderColor = borderAnim.interpolate({
+     inputRange: [0, 1],
+     outputRange: ["transparent", "#4CAF50"],  // siempre verde al animar
+    });
 
   const handleReset = async () => {
     setError("");
@@ -37,24 +44,18 @@ export default function PantallaRecuperarContrasena({ navigation }: any) {
     }
 
     setLoading(true);
-    // Generamos el deep link dinámicamente
-    const redirectUrl = Linking.createURL("reset-password");
-    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl });
+    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: RESET_PASSWORD_URL,
+    });
     setLoading(false);
 
     if (resetErr) {
       setError("No pudimos enviar el correo. Intentá de nuevo.");
       animateError();
     } else {
-      // Vamos a la pantalla de "revisa tu mail"
       navigation.replace("PantallaCheckMail");
     }
   };
-
-  const borderColor = borderAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["transparent", "#E53935"],
-  });
 
   return (
     <Animated.View style={[styles.wrapper, { borderColor }]}>
@@ -64,7 +65,9 @@ export default function PantallaRecuperarContrasena({ navigation }: any) {
             <MaterialCommunityIcons name="email-outline" size={32} color="#fff" />
           </LinearGradient>
           <Text style={styles.title}>Recuperar contraseña</Text>
-          <Text style={styles.subtitle}>Ingresá tu correo y te enviaremos un enlace para cambiarla.</Text>
+          <Text style={styles.subtitle}>
+            Ingresá tu correo y te enviaremos un enlace para cambiarla.
+          </Text>
         </View>
 
         <Card style={styles.card}>

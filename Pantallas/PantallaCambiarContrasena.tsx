@@ -28,21 +28,33 @@ export default function PantallaCambiarContrasena({ navigation }: any) {
 
   useEffect(() => {
     (async () => {
-      // 1) Capturo la URL que abrió la app
+      // 1) traemos la URL que abrió la app
       const url = await Linking.getInitialURL();
-      console.log("Deep link recibido:", url);
-
-      // 2) La paso a Supabase para extraer el token y guardar la sesión
-      //    (casteo a any porque TS no reconoce el método en tu versión)
-      const { error } = await (supabase.auth as any).getSessionFromUrl({
-        storeSession: true,
-        url,
-      });
-      if (error) {
-        console.warn("Link inválido o expirado:", error.message);
-        navigation.replace("PantallaIniciarSesion");
+      if (!url) {
+        console.warn("No hay URL de deep-link");
+        return navigation.replace("PantallaIniciarSesion");
       }
-      // si no hay error, la sesión quedó almacenada y mostramos el formulario
+
+      // 2) parseamos queryParams (TS-safe)
+      const { queryParams } = Linking.parse(url) || {};
+      const access_token  = (queryParams?.access_token  as string) || "";
+      const refresh_token = (queryParams?.refresh_token as string) || "";
+
+      if (!access_token || !refresh_token) {
+        console.warn("Faltan tokens en URL:", queryParams);
+        return navigation.replace("PantallaIniciarSesion");
+      }
+
+      // 3) restauramos la sesión en RN
+      const { data, error: sessionErr } = await supabase.auth.setSession({
+        access_token,
+        refresh_token,
+      });
+      if (sessionErr) {
+        console.warn("No se pudo setear sesión:", sessionErr.message);
+        return navigation.replace("PantallaIniciarSesion");
+      }
+      // si llegamos acá, ya estamos logueados y se muestra el form
     })();
   }, []);
 
@@ -78,11 +90,8 @@ export default function PantallaCambiarContrasena({ navigation }: any) {
           colors={["#4E8DF5", "#2C68F2"]}
           style={styles.gradientIcon}
         >
-          <MaterialCommunityIcons
-            name="lock-reset"
-            size={32}
-            color="#fff"
-          />
+          {/* Icono corregido a uno válido */}
+          <MaterialCommunityIcons name="lock-reset" size={32} color="#fff" />
         </LinearGradient>
         <Text style={styles.title}>Crear nueva contraseña</Text>
         <Text style={styles.subtitle}>
